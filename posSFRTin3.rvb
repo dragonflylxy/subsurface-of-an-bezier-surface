@@ -1,0 +1,482 @@
+
+Dim strObject, arrPoint, arrParam, gg, i, sfspts, ww, xs, xl, dg, ll, txp
+
+Dim i1, j1, i2, j2, hh, wght, wi, yon, gsss, adpts
+
+ReDim u(2,2), v(2,2), x(1), y(1), z(1), num(2,2)
+
+uu = Rhino.GetReal("Degree of U", 1, 1)
+
+vv = Rhino.GetReal("Degree of V", 1, 1)
+
+ReDim u(uu,vv), v(uu,vv), fu(uu,vv), fv(uu,vv), sm(uu,vv)
+
+
+yon = Rhino.GetString("Rational surface?(y/n)", "n")
+
+If yon = "n" Then 
+  
+	For ry=0 To uu
+    
+		For rvy=0 To vv
+    
+			sm(ry, rvy) = 1
+    
+		Next
+        
+	Next
+  
+End If
+
+
+strObject = Rhino.GetObject("Select a surface", 8)
+
+If Rhino.IsSurface(strObject) Then
+  
+	sfspts = Rhino.SurfacePoints(strObject)
+  
+	udm = Rhino.SurfaceDomain(strObject, 0)
+  
+	vdm = Rhino.SurfaceDomain(strObject, 1)
+    
+	uv = Rhino.SurfacePointCount(strObject)
+  
+	ll = UBound(sfspts)
+  
+	ReDim xs(ll),wght(ll)
+   
+	If Rhino.IsSurfaceRational(strObject) Then
+    
+		wght = Rhino.SurfaceWeights(strObject)
+    
+	Else
+    
+		For wi = 0 To ll
+      
+			wght(wi) = 1
+      
+		Next
+    
+	End If   
+   
+	Rem Rhino.messagebox(ll)  
+    
+	udg = uv(0) - 1
+  
+	vdg = uv(1) - 1
+    
+	ReDim  x(ll), y(ll), z(ll)
+  
+	ww = 0
+  
+
+	For i=0 To udg
+    
+		For j=0 To vdg
+      
+			pt = sfspts(ww)
+      
+			xs(ww) = C(udg, i) * C(vdg, j)
+      
+			x(ww) = pt(0) 
+      
+			y(ww) = pt(1) 
+      
+			z(ww) = pt(2)
+      
+			ww = ww + 1
+      
+		Next
+    
+	Next
+  
+	Rem Rhino.messagebox(ubound(z,2))
+    
+	gsss = 0
+
+	ReDim adpts((uu + 1) * (vv + 1) - 1)
+      
+	For i=0 To uu
+  
+		xu = C(uu, i)
+  
+		For j=0 To vv
+    
+			arrPoint = Rhino.GetPointOnSurface(strObject, "Pick point")
+
+			If yon = "y" Then sm(i, j) = Rhino.GetReal("Weight of point", 1, 0.0001) End If
+    
+    
+adpts(gsss) = Rhino.AddPoint(arrPoint)
+    
+gsss = gsss + 1
+    
+If IsArray(arrPoint) Then
+
+	arrParam = Rhino.SurfaceClosestPoint(strObject, arrPoint)
+
+	If IsArray(arrParam) Then
+          
+		xl = C(vv, j) * xu
+                    
+		d0 = (arrParam(0) - udm(0)) / (udm(1) - udm(0))
+          
+		d1 = (arrParam(1) - vdm(0)) / (vdm(1) - vdm(0))
+          
+		u(i, j) = d0 * xl * sm(i, j)
+          
+		v(i, j) = d1 * xl * sm(i, j)
+          
+		fu(i, j) = (1 - d0) * xl * sm(i, j)
+          
+		fv(i, j) = (1 - d1) * xl * sm(i, j)
+                    
+	End If
+
+End If
+    
+  Next
+  
+  Next
+  
+gggg = gsss - 1
+    
+      
+Rhino.DeleteObjects adpts
+  
+
+dguu = uu * (udg + vdg)
+
+dgvv = vv * (udg + vdg)
+
+ReDim num(dguu,dgvv), txp(ll,dguu,dgvv), jg((dguu+1)*(dgvv+1)-1), vet((dguu+1)*(dgvv+1)-1), kntU(dguu * 2 - 1), kntV(dgvv * 2 - 1)
+
+For i=0 To dguu
+  
+	xcc = C(dguu, i)
+  
+	For j=0 To dgvv
+  
+		num(i, j) = C(dgvv, j) * xcc
+  
+		Rem Rhino.messagebox(num(i,j))
+  
+	Next
+     
+Next
+
+ww = 0
+
+For i=0 To udg
+   
+	For j=0 To vdg
+    
+		tmx = wght(ww) * xs(ww)
+    
+		For i1=0 To udg - i - 1
+      
+			tmx = F(tmx, fu)
+    
+		Next
+        
+		For j1=0 To i - 1
+      
+			tmx = F(tmx, u)
+    
+		Next   
+             
+		For i2=0 To vdg - j - 1
+      
+			tmx = F(tmx, fv)
+    
+		Next
+        
+		For j2=0 To j - 1
+      
+			tmx = F(tmx, v)
+    
+		Next
+                                 
+		For hh=0 To dguu
+      
+			For ss=0 To dgvv
+              
+				txp(ww, hh, ss) = tmx(hh, ss)
+         
+			Next      
+      
+		Next
+    
+             
+		ww = ww + 1
+    
+		Rem Rhino.messagebox(i & " " & j & " " & ww)
+    
+	Next
+  
+Next
+
+
+hvh = 0
+
+For ij=0 To dguu
+  
+	For iji=0 To dgvv
+      
+		tmpx = 0
+  
+		tmpy = 0
+  
+		tmpz = 0
+    
+		wg = 0
+  
+		For kk=0 To ll
+        
+			tmpx = tmpx + x(kk) * txp(kk, ij, iji)
+    
+			tmpy = tmpy + y(kk) * txp(kk, ij, iji)
+    
+			tmpz = tmpz + z(kk) * txp(kk, ij, iji)
+      
+			wg = wg + txp(kk, ij, iji)
+    
+		Next
+  
+		jg(hvh) = Array(tmpx / wg, tmpy / wg, tmpz / wg)
+   
+		vet(hvh) = wg / num(ij, iji)
+    
+		hvh = hvh + 1
+      
+	Next  
+
+Next
+
+For nnt=0 To dguu - 1
+  
+	kntU(nnt) = 0
+  
+	kntU(nnt + dguu) = 1
+    
+Next
+
+For nnt=0 To dgvv - 1
+  
+	kntV(nnt) = 0
+  
+	kntV(nnt + dgvv) = 1
+    
+Next
+
+cnt = Array(dguu + 1, dgvv + 1)
+
+dguv = Array(dguu, dgvv)
+
+Rem Rhino.addpoints jg
+
+If dguu > 11 Or dgvv > 11 Then
+    
+	ReDim Vcv1(dgvv),Vcv2(dgvv),VcW1(dgvv),VcW2(dgvv)
+  
+	ReDim Ucv1(dguu),Ucv2(dguu),UcW1(dguu),UcW2(dguu)
+  
+	For i=0 To dgvv
+    
+		tpv1 = 0
+    
+		Vcv1(i) = Array(tpv1, i, 0)
+    
+		tpv2 = dguu
+    
+		Vcv2(i) = Array(tpv2, i, 0)
+    
+		VcW1(i) = vet(i)
+    
+		VcW2(i) = vet(i + dguu * cnt(1))
+    
+	Next
+  
+	For j=0 To dguu
+    
+		tpu1 = 0
+    
+		Ucv1(j) = Array(j, tpu1, 0)
+        
+		tpu2 = dgvv    
+    
+		Ucv2(j) = Array(j, tpu2, 0)
+       
+		UcW1(j) = vet(j * cnt(1))
+    
+		UcW2(j) = vet(dgvv + j * cnt(1))
+    
+	Next
+  
+	st1 = Rhino.AddNurbsCurve(Vcv1, kntV, dgvv, VcW1)
+  
+	st2 = Rhino.AddNurbsCurve(Vcv2, kntV, dgvv, VcW2)
+  
+	st3 = Rhino.AddNurbsCurve(Ucv1, kntU, dguu, UcW1)
+  
+	st4 = Rhino.AddNurbsCurve(Ucv2, kntU, dguu, UcW2)
+
+	stsf = Rhino.AddEdgeSrf(Array(st1, st2, st3, st4))
+  
+	Rhino.EnableObjectGrips stsf
+  
+	If yon = "y" Or Rhino.IsSurfaceRational(strObject) Then
+      
+		ww = 0
+  
+		For i=0 To dguu
+    
+			For j=0 To dgvv
+      
+				Rhino.SelectObjectGrip stsf, ww
+      
+				Rhino.Command "-Weight" & " " & vet(ww) & " ", -1
+      
+				Rhino.UnselectObjectGrip stsf, ww
+      
+				ww = ww + 1
+    
+			Next
+    
+		Next
+  
+	End If  
+  
+	Rhino.ObjectGripLocations stsf, jg
+    
+	Rhino.EnableObjectGrips stsf, 0
+  
+	Rhino.DeleteObject st1
+  
+	Rhino.DeleteObject st2
+  
+	Rhino.DeleteObject st3
+  
+	Rhino.DeleteObject st4
+  
+Else
+  
+	Rhino.AddNurbsSurface cnt, jg, kntU, kntV, dguv, vet
+
+End If
+
+
+Rem Rhino.messagebox(dg)
+
+
+End If
+
+
+
+	Function C(m, n)
+	Dim ci
+  
+	c1 = 1
+  
+	c2 = 1
+  
+	c3 = 1
+  
+	For ci=1 To m
+    
+		c1 = c1 * ci
+    
+	Next
+  
+	For ci=1 To n
+    
+		c2 = c2 * ci
+    
+	Next
+  
+	For ci=1 To m - n
+    
+		c3 = c3 * ci
+    
+	Next
+  
+	C = c1 / c2 / c3
+  
+End Function
+
+
+Function F(a, b)
+  
+	Dim au, bu, av, bv, cu, cv, fi1, fi2, fj1, fj2, tmp, ra, rb
+
+	au = 0
+  
+	bu = 0
+  
+	av = 0
+  
+	bv = 0
+  
+	If IsArray(a) Then 
+    
+		au = UBound(a, 1) 
+    
+		av = UBound(a, 2) 
+    
+		ra = a
+    
+	Else
+    
+		ReDim ra(au + 1,av + 1)
+    
+		ra(0, 0) = a
+    
+	End If
+  
+	If IsArray(b) Then 
+    
+		bu = UBound(b, 1) 
+    
+		bv = UBound(b, 2) 
+    
+		rb = b
+    
+	Else
+  
+		ReDim rb(bu + 1,bv + 1)
+    
+		rb(0, 0) = b
+    
+	End If
+  
+    
+	cu = au + bu
+  
+	cv = av + bv
+  
+	Rem Rhino.messagebox(au & " " & bu & " " & cu)
+      
+	ReDim tmp(cu,cv)
+  
+	For fi1=0 To au
+    
+		For fj1=0 To av
+          
+			For fi2=0 To bu
+        
+				For fj2=0 To bv
+                  
+					tmp(fi1 + fi2, fj1 + fj2) = ra(fi1, fj1) * rb(fi2, fj2) + tmp(fi1 + fi2, fj1 + fj2)
+           
+				Next
+         
+			Next
+      
+		Next
+              
+	Next
+
+	F = tmp 
+
+  
+End Function
