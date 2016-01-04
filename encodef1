@@ -1,0 +1,46 @@
+
+
+/* Encoder Library - TwoKnobs Example
+ * http://www.pjrc.com/teensy/td_libs_Encoder.html
+ *
+ * This example code is in the public domain.
+ */
+
+#include <Wire.h>
+#include <Encoder.h>
+
+Encoder knobLeft(2, 3);
+Encoder knobRight(18, 19);
+
+void setup() {
+  Wire.begin(8);                // join i2c bus with address #8
+  Wire.onRequest(requestEvent);
+}
+
+int positionLeft  = -999;
+int positionRight = -999;
+
+int mx = 0;
+int my = 0;
+
+void loop() {
+  int newLeft, newRight;
+  newLeft = knobLeft.read();
+  newRight = knobRight.read();
+  if (newLeft != positionLeft || newRight != positionRight) {
+    positionLeft = newLeft;
+    positionRight = newRight;
+  }
+  mx = newLeft;
+  my = newRight;
+}
+
+void requestEvent()
+{
+  uint8_t buffer[4];
+  buffer[0] = mx >> 8;
+  buffer[1] = mx & 0xff;
+  buffer[2] = my >> 8;
+  buffer[3] = my & 0xff;
+  Wire.write(buffer, 4);
+}
